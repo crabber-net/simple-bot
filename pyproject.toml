@@ -7,7 +7,6 @@ authors = ["Jake Ledoux <contactjakeledoux@gmail.com>"]
 [tool.poetry.dependencies]
 python = ">=3.8,<3.11"
 python-crabber = "^1.1.0"
-python-language-server = {extras = ["all"], version = "^0.36.2"}
 python-dotenv = "^0.19.1"
 loguru = "^0.5.3"
 
