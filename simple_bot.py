@@ -27,6 +27,20 @@ def load_quotes(base_dir: Optional[str] = None):
 def get_quote(quotes: List[str]):
     logger.debug('Selecting quote from list...')
     quote = random.choice(quotes)
+
+    # Check recent Molts to see if quote has already been posted
+    if os.getenv('AVOID_COLLISION', True) and len(quotes) > 2:
+        logger.debug('Requesting 15 most recent molts...')
+        recent_molts = api.get_current_user() \
+            .get_molts(min(15, len(quotes) - 2))
+        logger.debug('Molts received.')
+        recent_quotes = [molt.content for molt in recent_molts]
+
+        # Re-roll quote choice until a new one is found
+        while quote in recent_quotes:
+            logger.debug('Quote was recently used, selecting new one.')
+            quote = random.choice(quotes)
+
     logger.debug('Chose: "{}"', quote)
     return quote
 
@@ -41,13 +55,13 @@ logger.debug('Program started.')
 
 # Prepare local Crabber connection
 if '--test' in sys.argv:
-    api_key = os.environ.get('CRABBER_LOCAL_KEY')
-    access_token = os.environ.get('CRABBER_LOCAL_TOKEN')
+    api_key = os.getenv('CRABBER_LOCAL_KEY')
+    access_token = os.getenv('CRABBER_LOCAL_TOKEN')
     base_url = 'http://localhost'
 # Prepare public Crabber connection
 else:
-    api_key = os.environ.get('CRABBER_DEPLOY_KEY')
-    access_token = os.environ.get('CRABBER_DEPLOY_TOKEN')
+    api_key = os.getenv('CRABBER_DEPLOY_KEY')
+    access_token = os.getenv('CRABBER_DEPLOY_TOKEN')
     base_url = 'https://crabber.net'
 
 if api_key and access_token:
@@ -62,8 +76,10 @@ if api_key and access_token:
         logger.info('Connected to Crabber. (username: @{})',
                     api.get_current_user().username)
 
-        # Send molt
+        # Pick a quote
         quote = get_quote(quotes)
+
+        # Send molt
         if api.post_molt(quote):
             logger.info('Posted molt successfully.', quote)
         else:
